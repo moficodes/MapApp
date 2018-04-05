@@ -172,18 +172,19 @@ export default class CityBikeMap extends Component {
             longitude: marker.longitude,
           };
 
-          const metadata = `${marker.stationName} (T ${marker.totalDocks} A ${marker.availableDocks} B ${marker.availableBikes})`;
+          const metadata = `Status: ${marker.statusValue}\nAvailable Docks: ${marker.availableDocks}\nAvailable Bikes: ${marker.availableBikes}\nLast Updated: ${marker.lastCommunicationTime}`;
 
           return (
             <MapView.Marker
               key={index}
               coordinate={coords}
-              title={metadata}
+              title={marker.stationName}
+              description={metadata}
               pinColor='#02844e'
               onPress={(e) => {
                 console.log(e.nativeEvent);
                 const region = {
-                  latitude: e.nativeEvent.coordinate.latitude + 0.004,
+                  latitude: e.nativeEvent.coordinate.latitude + 0.002,
                   longitude: e.nativeEvent.coordinate.longitude,
                   latitudeDelta: LATITUDE_DELTA / 10,
                   longitudeDelta: LONGITUDE_DELTA / 10,
