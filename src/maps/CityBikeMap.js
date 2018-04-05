@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import MapView from 'react-native-maps';
 import { customMapStyle } from '../assets/styles/mapstyle';
+import BikeNYCCallout from '../components/BikeNYCCallout';
 
 const { width, height } = Dimensions.get('window');
 
@@ -170,24 +171,39 @@ export default class CityBikeMap extends Component {
             latitude: marker.latitude,
             longitude: marker.longitude,
           };
+
+          const metadata = `${marker.stationName} (T ${marker.totalDocks} A ${marker.availableDocks} B ${marker.availableBikes})`;
+
           return (
             <MapView.Marker
               key={index}
               coordinate={coords}
-              title={marker.stationName}
-              descripTion={marker.statusValue}
-              pinColor='#02844e55'
+              title={metadata}
+              pinColor='#02844e'
               onPress={(e) => {
-                console.log(e.nativeEvent.coordinate);
+                console.log(e.nativeEvent);
                 const region = {
-                  latitude: e.nativeEvent.coordinate.latitude,
+                  latitude: e.nativeEvent.coordinate.latitude + 0.004,
                   longitude: e.nativeEvent.coordinate.longitude,
                   latitudeDelta: LATITUDE_DELTA / 10,
                   longitudeDelta: LONGITUDE_DELTA / 10,
                 };
                 this.mapViewRef.animateToRegion(region, 500);
               }}
-            />
+            >
+              {/* <MapView.Callout 
+                tooltip
+              >
+                <BikeNYCCallout 
+                  title={marker.stationName}
+                  status={marker.statusValue}
+                  availableBikes={marker.availableBikes}
+                  availableDocks={marker.availableDocks}
+                  address={marker.stAddress1}
+                  time={marker.lastCommunicationTime}
+                />
+              </MapView.Callout> */}
+            </MapView.Marker>
           );
         })}
         </MapView>
@@ -197,6 +213,9 @@ export default class CityBikeMap extends Component {
 }
 
 const styles = StyleSheet.create({
+  containerStylez: {
+    backgroundColor: '#ffffff',
+  },
   container: {
     position: 'absolute',
     top: 0,
