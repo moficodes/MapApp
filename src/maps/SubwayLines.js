@@ -13,7 +13,7 @@ const { width, height } = Dimensions.get('window');
 
 const ASPECT_RATIO = width / height;
 
-const LATITUDE_DELTA = 0.2;
+const LATITUDE_DELTA = 0.3;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 export default class SubwayLines extends Component {
@@ -28,7 +28,6 @@ export default class SubwayLines extends Component {
           longitudeDelta: 0,
         },
         isLoading: true,
-        lines_coords: []
       };
     }
   
@@ -64,48 +63,77 @@ export default class SubwayLines extends Component {
     processLineColor(lineSymbol) {
       let color = '#000';
       switch (lineSymbol) {
-        case 'G':
-          color = '#c6ff00';
-          break;
-        case 'N':
-          color = '#ffea00';
-          break;
-        case 'F':
-          color = '#ef6c00';
-          break;
-        case 'E': 
-          color = '#f57c00';
-          break;
         case 'A':
+          color = '#0d47a1';
+          break;
+        case 'B':
+          color = '#fb8c00';
+          break;
         case 'C':
-          color = '#536dfe';
+          color = '#1e88e5';
           break;
         case 'D':
-        case 'B':
-          color = '#ffb300';
+          color = '#ff9800';
           break;
-        case '1':
-        case '2':
-        case '3':
-          color = '#e53935';
+        case 'E': 
+          color = '#29b6f6';
           break;
-        case '4':
-        case '5':
-        case '6':
-          color = '#4caf50';
+        case 'F':
+          color = '#ff3d00';
+          break;
+        case 'G':
+          color = '#b2ff59';
+          break;
+        case 'J':
+          color = '#4e342e';
           break;
         case 'L':
           color = '#78909c';
           break;
-        case 'J':
+        case 'M':
+          color = '#ff6e40';
+          break;
+        case 'N':
+          color = '#26a69a';
+          break;
+        case 'Q':
+          color = '#e040fb';
+          break;
+        case 'R':
+          color = '#5e35b1';
+          break;
+        case 'S':
+          color = '#607d8b';
+          break;
+        case 'W':
+          color = '#eeff41';
+          break;
         case 'Z':
           color = '#795548';
           break;
+        case '1':
+          color = '#f44336';
+          break;
+        case '2':
+          color = '#e53935';
+          break;
+        case '3':
+          color = '#b71c1c';
+          break;
+        case '4':
+          color = '#4caf50';
+          break;
+        case '5':
+          color = '#388e3c';
+          break;
+        case '6':
+          color = '#1b5e20';
+          break;
         case '7':
-          color = '#7b1fa2';
+          color = '#ab47bc';
           break;
         default:
-          color = '#fafafa';
+          color = '#000';
       }
       return color;
     }
@@ -121,33 +149,24 @@ export default class SubwayLines extends Component {
       })
         .then((response) => response.json())
         .then((responseJson) => {
-          const extradata = [];
           console.log(responseJson[0]);
-          /*
-          {
-            'G': {
-              name: 'G',
-              stroke: 4,
-              line: [
-                [{}...]
-              ]
-            }
-          }
-          */
 
         const stations = {};
 
         const geoms = responseJson.map(data => {
-          const { rt_symbol, name, the_geom } = data;
-          if (stations[rt_symbol] === undefined) {
-            stations[rt_symbol] = {
-              color: this.processLineColor(rt_symbol),
-              name,
-              stroke: 4,
-              line: [],
-            };
-          }
-          extradata.push(this.processLineColor(data.rt_symbol));
+          const { name, the_geom } = data;
+          const sharedLines = name.split('-');
+          sharedLines.forEach((sym) => {
+            if (stations[sym] === undefined) {
+              stations[sym] = {
+                lineColor: this.processLineColor(sym),
+                name,
+                stroke: 4,
+                lineArr: [],
+              };
+            }
+          });
+
           const arrs = the_geom.coordinates;
           const linearr = arrs.map(x => (
             { 
@@ -155,18 +174,19 @@ export default class SubwayLines extends Component {
               longitude: x[0],
             }
           ));
-          stations[rt_symbol].line.push(linearr);
+          sharedLines.forEach((sym) => {
+            stations[sym].lineArr.push(linearr);
+          });
           return linearr;
         });
 
-          // console.log(Object.keys(stations));
-          // console.log(stations['G'].line[0]);
+          console.log(Object.keys(stations));
+          // console.log(stations['G'].lineArr[0]);
           this.setState({ 
             isLoading: false,
             geomarr: geoms,
-            extra: extradata,
             stations,
-            lines: Object.keys(stations),
+            lineName: Object.keys(stations),
             flag: 0
           });
         })
@@ -196,17 +216,26 @@ export default class SubwayLines extends Component {
       }
     }
 
-    lineOnPress(event) {
-      console.log(event);
-      console.log('Line Pressed');
+    lineOnPress(idxLine, line) {
+      const temp = this.state.lineName[this.state.lineName.length - 1];
+      this.state.lineName[this.state.lineName.length - 1] = this.state.lineName[idxLine
+      ];
+      this.state.lineName[idxLine] = temp;
+      console.log('Pressed lineArr');
+      this.state.lineName.map((lin) => {
+        this.state.stations[lin].stroke = 4;
+        return null;
+      });
+      this.state.stations[line].stroke = 8;
+      this.setState({ flag: this.state.flag + 1 });
     }
   
     mapViewRef;
   
     render() {
       const manhattan = {
-        latitude: 40.76727216,
-        longitude: -73.99392888,
+        latitude: 40.729086756382,
+        longitude: -73.9291111395031,
         latitudeDelta: LATITUDE_DELTA,
         longitudeDelta: LONGITUDE_DELTA,
       };
@@ -222,28 +251,19 @@ export default class SubwayLines extends Component {
             loadingEnabled
             customMapStyle={customMapStyle}
           >
-            {this.state.isLoading ? null : this.state.lines.map((l, index) => {
-              const linearr = this.state.stations[l].line;
+            {this.state.isLoading ? null : this.state.lineName.map((line, idxLine) => {
+              const linearr = this.state.stations[line].lineArr;
               // console.log(linearr);
-              return linearr.map((arr, indx) => {
-                // console.log(arr);
-                const key = `${l}${indx}`;
+              return linearr.map((coords, idxCoordinates) => {
+                // console.log(coords);
+                const key = `${line}${idxCoordinates}${idxLine}`;
                 return ( 
                   <MapView.Polyline
                     key={key}
-                    coordinates={arr}
-                    strokeColor={this.state.stations[l].color}
-                    strokeWidth={this.state.stations[l].stroke}
-                    onPress={() => {
-                      console.log('Pressed line');
-                      this.state.lines.map((lin) => {
-                        this.state.stations[lin].stroke = 4;
-                        // this.setState({ stations[lin]: {...this.state.stations, this.state.stations[lin].stroke: 4}});
-                        return null;
-                      });
-                      this.state.stations[l].stroke = 8;
-                      this.setState({ flag: this.state.flag + 1 });
-                    }}
+                    coordinates={coords}
+                    strokeColor={this.state.stations[line].lineColor}
+                    strokeWidth={this.state.stations[line].stroke}
+                    onPress={() => this.lineOnPress(idxLine, line)}
                   />
                 );
               });
