@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import MapView from 'react-native-maps';
 import { customMapStyle } from '../assets/styles/mapstyle';
-import BikeNYCCallout from '../components/BikeNYCCallout';
+// import BikeNYCCallout from '../components/BikeNYCCallout';
+import dot from '../assets/images/dot.png';
 
 const { width, height } = Dimensions.get('window');
 
@@ -180,6 +181,7 @@ export default class CityBikeMap extends Component {
               coordinate={coords}
               title={marker.stationName}
               description={metadata}
+              image={dot}
               pinColor='#02844e'
               onPress={(e) => {
                 console.log(e.nativeEvent);
