@@ -123,22 +123,51 @@ export default class SubwayLines extends Component {
         .then((responseJson) => {
           const extradata = [];
           console.log(responseJson[0]);
-          const geoms = responseJson.map(data => {
-            //console.log(data);
-            extradata.push(this.processLineColor(data.rt_symbol));
-            const arrs = data.the_geom.coordinates;
-            return arrs.map(x => (
-              { 
-                latitude: x[1], 
-                longitude: x[0],
-              }
-            ));
-          });
-          console.log(geoms);
+          /*
+          {
+            'G': {
+              name: 'G',
+              stroke: 4,
+              line: [
+                [{}...]
+              ]
+            }
+          }
+          */
+
+        const stations = {};
+
+        const geoms = responseJson.map(data => {
+          const { rt_symbol, name, the_geom } = data;
+          if (stations[rt_symbol] === undefined) {
+            stations[rt_symbol] = {
+              color: this.processLineColor(rt_symbol),
+              name,
+              stroke: 4,
+              line: [],
+            };
+          }
+          extradata.push(this.processLineColor(data.rt_symbol));
+          const arrs = the_geom.coordinates;
+          const linearr = arrs.map(x => (
+            { 
+              latitude: x[1], 
+              longitude: x[0],
+            }
+          ));
+          stations[rt_symbol].line.push(linearr);
+          return linearr;
+        });
+
+          // console.log(Object.keys(stations));
+          // console.log(stations['G'].line[0]);
           this.setState({ 
             isLoading: false,
             geomarr: geoms,
             extra: extradata,
+            stations,
+            lines: Object.keys(stations),
+            flag: 0
           });
         })
         .catch((error) => {
@@ -181,29 +210,43 @@ export default class SubwayLines extends Component {
         latitudeDelta: LATITUDE_DELTA,
         longitudeDelta: LONGITUDE_DELTA,
       };
+      console.log(this.mapViewRef);
       return (
         <View style={styles.container}>
           <MapView
             ref={(mapView) => { this.mapViewRef = mapView; }}
             style={styles.map}
-            region={manhattan}
+            region={this.mapViewRef === undefined ? manhattan : this.mapViewRef.__lastRegions}
             showsUserLocation
             followsUserLocation
             loadingEnabled
             customMapStyle={customMapStyle}
           >
-            {this.state.isLoading ? null : this.state.geomarr.map((geom, index) => {
-              return ( 
-                <MapView.Polyline
-                  key={index}
-                  coordinates={geom}
-                  strokeColor={this.state.extra[index]}
-                  strokeWidth={2}
-                  onPress={() => {
-                    console.log(index);
-                  }}
-                />
-              );
+            {this.state.isLoading ? null : this.state.lines.map((l, index) => {
+              const linearr = this.state.stations[l].line;
+              // console.log(linearr);
+              return linearr.map((arr, indx) => {
+                // console.log(arr);
+                const key = `${l}${indx}`;
+                return ( 
+                  <MapView.Polyline
+                    key={key}
+                    coordinates={arr}
+                    strokeColor={this.state.stations[l].color}
+                    strokeWidth={this.state.stations[l].stroke}
+                    onPress={() => {
+                      console.log('Pressed line');
+                      this.state.lines.map((lin) => {
+                        this.state.stations[lin].stroke = 4;
+                        // this.setState({ stations[lin]: {...this.state.stations, this.state.stations[lin].stroke: 4}});
+                        return null;
+                      });
+                      this.state.stations[l].stroke = 8;
+                      this.setState({ flag: this.state.flag + 1 });
+                    }}
+                  />
+                );
+              });
               })
             }
           </MapView>
